@@ -35,17 +35,30 @@ class Student {
 
     // Student Details Display
     public void displayStudent() {
-        System.out.println();
-        System.out.println("*** Student Info ***");
-        System.out.println("Name : " + this.name);
-        System.out.println("Stream : " + this.stream);
-        System.out.println("Stud ID : " + this.sid);
-        System.out.println();
+
+        System.out.println("*** Display Students ***");
+        try{
+            Statement stmt =connection.createStatement();
+            ResultSet rs= stmt.executeQuery("Select sid , name, stream FROM students");
+            while(rs.next()){
+                System.out.println(rs.getInt("sid")+". "+rs.getString("name")+". "+rs.getString("stream"));
+            }
+        }
+        catch(SQLException e)
+        {
+            e.printStackTrace();
+        }
+
+        // System.out.println();
+        // System.out.println("*** Student Info ***");
+        // System.out.println("Name : " + this.name);
+        // System.out.println("Stream : " + this.stream);
+        // System.out.println("Stud ID : " + this.sid);
+        // System.out.println();
     }
 
     // Borrow Books
-    public void borrowBook(String book) 
-    {
+    public void borrowBook(String book) {
         borrowedBooks.add(book);
         System.out.println("Borrowed " + book);
     }
@@ -97,55 +110,24 @@ class Library {
 
     public void addBook(String bookName) {
         try {
-            // Find the maximum current bookId
-            Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT MAX(bookId) AS maxId FROM books");
-            int newId = 1;
-            if (rs.next()) {
-                newId = rs.getInt("maxId") + 1;
-            }
-
-            // Insert the new book with the new ID
-            PreparedStatement pstmt = connection.prepareStatement("INSERT INTO books (bookId, bookName) VALUES (?, ?)");
-            pstmt.setInt(1, newId);
-            pstmt.setString(2, bookName);
+            PreparedStatement pstmt = connection.prepareStatement("INSERT INTO books (bookName) VALUES (?)");
+            pstmt.setString(1, bookName);
             pstmt.executeUpdate();
-            System.out.println("Book added successfully with ID " + newId);
+            System.out.println("Book added successfully!");
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+    public static void removeBook(int bookId) {
+        try (Connection conn = connection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("DELETE FROM Books WHERE bookId = ?")) {
 
-    public void removeBook(int bookId) {
-        try {
-            // Remove the book from the database
-            PreparedStatement pstmt = connection.prepareStatement("DELETE FROM books WHERE bookId = ?");
-            pstmt.setInt(1, bookId);
-            pstmt.executeUpdate();
-            
-            // Reassign IDs to fill gaps
-            Statement stmt = connection.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT bookId FROM books ORDER BY bookId");
-            
-            int newId = 1;
-            while (rs.next()) {
-                int currentId = rs.getInt("bookId");
-                if (currentId != newId) {
-                    // Update the ID to fill the gap
-                    PreparedStatement updatePstmt = connection.prepareStatement("UPDATE books SET bookId = ? WHERE bookId = ?");
-                    updatePstmt.setInt(1, newId);
-                    updatePstmt.setInt(2, currentId);
-                    updatePstmt.executeUpdate();
-                }
-                newId++;
-            }
-            
-            System.out.println("Book removed and IDs reassigned successfully.");
+            stmt.setInt(1, bookId);
+            stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
-
 }
 
 class LibraryManagementSystem {
@@ -160,7 +142,7 @@ class LibraryManagementSystem {
 
             Admin admin = new Admin("admin", 123);
             Library library = new Library(new ArrayList<>(), connection);
-            List<Student> students =(new ArrayList<>());
+            List<Student> students =new ArrayList<>(new ArrayList<>(),connection);
 
             boolean isLoggedIn = false;
             Student currentStudent = null;
@@ -300,9 +282,9 @@ class LibraryManagementSystem {
                     System.out.println("1. View Books List");
                     System.out.println("2. Add Books");
                     System.out.println("3. Remove Books");
-                    System.out.println("4. View Students");
-                    System.out.println("5. View Borrowed Book Details");
-                    System.out.println("6. Logout");
+                    System.out.println("3. View Students");
+                    System.out.println("4. View Borrowed Book Details");
+                    System.out.println("5. Logout");
                     System.out.println();
                     System.out.print("Enter an Option: ");
                     int option1 = sc.nextInt();
